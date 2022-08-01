@@ -4,6 +4,10 @@ import SendEmailWhenProductIsCreatedHandler from "../product/handler/send-email-
 import ProductCreatedEvent from "../product/product-created.event";
 import EventDispatcher from "./event-dispatcher";
 import CustomerCreatedEvent from "../customer/customer-created.event";
+import CustomerAddressChangeEvent from "../customer/customer-address-change.event";
+import Customer from "../../entity/customer";
+import Address from "../../entity/address";
+import SendLogWhenCustomerAddressIsChangedHandler from "../customer/handler/send-log-when-customer-address-is-changed.handler";
 
 describe("Domain events tests", () => {
   it("should register an event handler", () => {
@@ -178,6 +182,87 @@ describe("Domain events tests", () => {
 
     expect(spyEventHandler1).toHaveBeenCalled();
     expect(spyEventHandler2).toHaveBeenCalled();
+  });
+
+  it("should register an event customer change address handler", () => {
+    const eventDispatcher = new EventDispatcher();
+    const eventHandler = new SendLogWhenCustomerAddressIsChangedHandler();
+
+    eventDispatcher.register("CustomerAddressChangeEvent", eventHandler);
+
+    expect(
+      eventDispatcher.getEventHandlers["CustomerAddressChangeEvent"]
+    ).toBeDefined();
+    expect(eventDispatcher.getEventHandlers["CustomerAddressChangeEvent"].length).toBe(
+      1
+    );
+    expect(
+      eventDispatcher.getEventHandlers["CustomerAddressChangeEvent"][0]
+    ).toMatchObject(eventHandler);
+  });
+
+  it("should unregister an event customer change address handler", () => {
+    const eventDispatcher = new EventDispatcher();
+    const eventHandler = new SendLogWhenCustomerAddressIsChangedHandler();
+
+    eventDispatcher.register("CustomerAddressChangeEvent", eventHandler);
+
+    expect(
+      eventDispatcher.getEventHandlers["CustomerAddressChangeEvent"][0]
+    ).toMatchObject(eventHandler);
+
+    eventDispatcher.unregister("CustomerAddressChangeEvent", eventHandler);
+
+    expect(
+      eventDispatcher.getEventHandlers["CustomerAddressChangeEvent"]
+    ).toBeDefined();
+    expect(eventDispatcher.getEventHandlers["CustomerAddressChangeEvent"].length).toBe(
+      0
+    );
+  });
+
+  it("should unregister all event customer change address handlers", () => {
+    const eventDispatcher = new EventDispatcher();
+    const eventHandler = new SendLogWhenCustomerAddressIsChangedHandler();
+
+    eventDispatcher.register("CustomerAddressChangeEvent", eventHandler);
+
+    expect(
+      eventDispatcher.getEventHandlers["CustomerAddressChangeEvent"][0]
+    ).toMatchObject(eventHandler);
+
+    eventDispatcher.unregisterAll();
+
+    expect(
+      eventDispatcher.getEventHandlers["CustomerAddressChangeEvent"]
+    ).toBeUndefined();
+  });
+
+  it("should notify all event customer change address handlers", () => {
+    const eventDispatcher = new EventDispatcher();
+    const eventHandler1 = new SendLogWhenCustomerAddressIsChangedHandler();
+    const spyEventHandler1 = jest.spyOn(eventHandler1, "handle");
+
+    eventDispatcher.register("CustomerAddressChangeEvent", eventHandler1);
+
+    expect(
+      eventDispatcher.getEventHandlers["CustomerAddressChangeEvent"][0]
+    ).toMatchObject(eventHandler1);
+
+    const address =  new Address("Rua",123,"38700000","Rio de Janeiro")
+    let customer = new Customer("1","customer 1")
+    customer.Address = address;
+
+    const newAddress =  new Address("Rua 1",1234,"38700001","Belo Horizonte")
+
+    customer.changeAddress(newAddress);
+    const customerAddressChangeEvent = new CustomerAddressChangeEvent({
+      customer
+    });
+
+    eventDispatcher.notify(customerAddressChangeEvent);
+
+    expect(spyEventHandler1).toHaveBeenCalled();
   });
 
 });
